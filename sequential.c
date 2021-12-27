@@ -1,108 +1,137 @@
-#include <omp.h>
 #include <stdio.h>
-#include <string.h>
+#include <sys/time.h>
 #include <stdlib.h>
-#include <time.h>
 
-struct bucket {
-	int n_elem;
-	int index; // [start : n_elem)
-	int start; //starting point in B array
-};
+#define limit 10000
 
-int cmpfunc (const void * a, const void * b)
-{
- return ( *(int*)a - *(int*)b );
+
+#define dim 50000 // tamanho do array
+#define tam_bucket 300 // tamanho de cada bucket originalmente
+#define num_buckets 20 // numero de buckets
+
+struct timeval start, end;
+
+typedef struct {
+    int tam;
+    int topo;   
+    int *balde;
+}bucket;
+
+/* 
+nº buckets : pre-definido
+range bucket - nº max do array / nº buckets
+*/
+
+void bucket_sort(int v[],int tam);                   //cabeçalho das funções
+void bubble(int v[],int tam);                                                 
+        
+void bucket_sort(int v[],int max){
+    int range = max/num_buckets + 1;
+    bucket b[num_buckets];                                      
+    int i,j,k;                                                 
+    /* 1 */ 
+    
+    for(i=0;i<num_buckets;i++){                  //inicializa todos os "topo"
+        b[i].tam = tam_bucket;
+        b[i].topo=0;
+        b[i].balde = (int *) malloc(sizeof(int)*tam_bucket);
+    }
+
+    
+/*     10
+
+    100
+
+    range = 10 // 100 / 10
+
+    0 - 9
+    10 - 19
+    20 -29
+    30 - 39
+    40 - 49
+    50 - 59
+    60 - 69
+    70 - 79
+    80 - 89
+    90 - 99
+
+    v[i] = 78 / n_buckets ?? */
+
+
+    /* 2 */ 
+    for(i=0;i<dim;i++){                          //verifica em que balde o elemento deve ficar
+        j = v[i] / range;
+        if(b[j].topo == b[j].tam){
+            // realloc
+            b[j].tam *= 2;
+            b[j].balde = (int *) realloc(b[j].balde, b[j].tam * sizeof(int));
+        }
+
+        b[j].balde[b[j].topo]=v[i];
+
+        (b[j].topo)++;
+    }
+    /* 3 */ 
+    for(i=0;i<num_buckets;i++)                     //ordena os baldes
+        if(b[i].topo)
+            bubble(b[i].balde,b[i].topo);
+
+    i=0;
+    /* 4 */ 
+    for(j=0;j<num_buckets;j++){                    //põe os elementos dos baldes de volta no vetor
+        for(k=0;k<b[j].topo;k++){
+            v[i]=b[j].balde[k];
+            i++;
+        }
+    }
 }
 
-int main(int argc, char *argv[]) {
+void bubble(int v[],int tam){
+    int i,j,temp,flag;
+    if(tam)
+        for(j=0;j<tam-1;j++){
+            flag=0;
+            for(i=0;i<tam-1;i++){
+                if(v[i+1]<v[i]){
+                    temp=v[i];
+                    v[i]=v[i+1];
+                    v[i+1]=temp;
+                    flag=1;
+                }
+            }
+            if(!flag)
+            break;
+        }
+}
 
-	int *A, *B, *temp;
-	int dim, n_buckets, i, w, j, limit;
-	struct bucket* buckets; //array of buckets
-	double t1; // Timing variables
-	float total; //total time
+int main(){
 
-	printf("Give length of array to sort \n");
-	if (scanf("%d", &dim) != 1){
-		printf("error\n");
-		return -1;
-	}
-	printf("Give number of buckets \n");
-	if (scanf("%d", &n_buckets) != 1){
-		printf("error\n");
-		return -1;
-	}
-	limit = 100000;
-	w = (int)limit/n_buckets;
-	A = (int *) malloc(sizeof(int)*dim);
-	B = (int *) malloc(sizeof(int)*dim);
-	
-	buckets = (struct bucket *) calloc(n_buckets, sizeof(struct bucket));
+    int i;
 
-	for(i=0;i<dim;i++) {
-		A[i] = random() % limit;
-	}
-	
-	if (dim <= 20) {
-		printf("Unsorted data \n");
-		for(i=0;i<dim;i++) {
-			printf("%d ",A[i]);
-		}
-		printf("\n");
-  	}
+    int *vetor = (int *) malloc(sizeof(int)*dim);
 
-// ****************************
-// Starting the main algorithm
-// ****************************
+    int max = -1;
 
-	t1 = omp_get_wtime();
-	
-	for (i=0; i<dim;i++){
-		j = A[i]/w;
-		if (j>n_buckets-1)
-				j = n_buckets-1;
-		buckets[j].n_elem++;
-	}
-	
-	//buckets[0].index=0; //bucket 0 starts from 0 in B, bucket 1 starts from the start of bucket 0 + the number of elements in bucket 0 ...
-	//buckets[0].start=0;
-	for (i=1; i<n_buckets;i++){
-		buckets[i].index = buckets[i-1].index + buckets[i-1].n_elem;
-		buckets[i].start = buckets[i-1].start + buckets[i-1].n_elem;
-	}
-	int b_index;
-	for (i=0; i<dim;i++){
-		j = A[i]/w;
-		if (j > n_buckets -1)
-				j = n_buckets-1;
-		b_index = buckets[j].index++;
-		B[b_index] = A[i];
-	}	
-	
-	for(i=0; i<n_buckets; i++)
-		qsort(B+buckets[i].start, buckets[i].n_elem, sizeof(int), cmpfunc);
-		
-	temp = A;
-	A = B;
-	B = temp;
-	total = omp_get_wtime() - t1;
-		
-	if (dim <= 20) {
-		printf("Sorted data \n");
-		for(i=0;i<dim;i++) {
-			printf("%d ",A[i]);
-		}
-		printf("\n");
-	}
+    for(i=0;i<dim;i++) {
+        vetor[i] = random() % limit;
+        if(max < vetor[i]) max = vetor[i];
+    }
 
-	printf("Sorting %d elements took %f seconds\n", dim,total);
 
-	int sorted = 1;
-	for(i=0;i<dim-1;i++) {
-		if (A[i] > A[i+1])
-			sorted = 0;
-  	}
-  	if (!sorted)
-		printf("The data is not sorted!!!\n");
+
+    // Calculate the time taken by take_enter()
+    gettimeofday(&start, NULL);
+
+    bucket_sort(vetor,max);
+
+    gettimeofday(&end, NULL);
+    long seconds = (end.tv_sec - start.tv_sec);
+    long micros = ((seconds * 1000000) + end.tv_usec) - (start.tv_usec);
+    printf("The elapsed time is %ld seconds and %ld micros\n", seconds, micros);
+
+
+    /* for(i=0;i<dim;i++){
+        printf("%d, ",vetor[i]);
+    }
+    puts("\n"); */
 }
