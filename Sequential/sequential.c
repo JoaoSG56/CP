@@ -5,10 +5,11 @@
 #define limit 10000
 
 
-#define dim 50000 // tamanho do array
-#define tam_bucket 300 // tamanho de cada bucket originalmente
-#define num_buckets 20 // numero de buckets
+#define dim 500000 // tamanho do array
 
+#define num_buckets 20 // numero de buckets
+#define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
+//#define tam_bucket 300
 struct timeval start, end;
 
 typedef struct {
@@ -27,8 +28,9 @@ void bubble(int v[],int tam);
         
 void bucket_sort(int v[],int max){
     int range = max/num_buckets + 1;
-    bucket b[num_buckets];                                      
-    int i,j,k;                                                 
+    printf("range: %d\n",range);
+    bucket b[num_buckets];
+    int i,j,k;
     /* 1 */ 
     
     for(i=0;i<num_buckets;i++){                  //inicializa todos os "topo"
@@ -105,7 +107,7 @@ void bubble(int v[],int tam){
 }
 
 int main(){
-
+    printf("tam_bucket: %d\n",tam_bucket);
     int i;
 
     int *vetor = (int *) malloc(sizeof(int)*dim);
