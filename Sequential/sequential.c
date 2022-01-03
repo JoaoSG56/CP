@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <stdlib.h>
 
@@ -25,7 +26,9 @@ range bucket - nº max do array / nº buckets
 
 void bucket_sort(int v[],int tam);                   //cabeçalho das funções
 void bubble(int v[],int tam);                                                 
-        
+int cmpfunc (const void * a, const void * b) {
+   return ( *(int*)a - *(int*)b );
+}     
 void bucket_sort(int v[],int max){
     int range = max/num_buckets + 1;
     printf("range: %d\n",range);
@@ -39,25 +42,7 @@ void bucket_sort(int v[],int max){
         b[i].balde = (int *) malloc(sizeof(int)*tam_bucket);
     }
 
-    
-/*     10
 
-    100
-
-    range = 10 // 100 / 10
-
-    0 - 9
-    10 - 19
-    20 -29
-    30 - 39
-    40 - 49
-    50 - 59
-    60 - 69
-    70 - 79
-    80 - 89
-    90 - 99
-
-    v[i] = 78 / n_buckets ?? */
 
 
     /* 2 */ 
@@ -75,8 +60,17 @@ void bucket_sort(int v[],int max){
     }
     /* 3 */ 
     for(i=0;i<num_buckets;i++)                     //ordena os baldes
-        if(b[i].topo)
+        if(b[i].topo){
             bubble(b[i].balde,b[i].topo);
+            //qsort(b[i].balde,b[i].topo,sizeof(int),cmpfunc);
+            //printf("\n\n----------------------\n");
+            //int j;
+            //printf("balde numero: %d\n",i);
+            //for(j = 0; j< b[i].topo; j++){
+            //    printf("%d, ", b[i].balde[j]);
+            //}
+            //printf("----------------------\n\n");
+        }
 
     i=0;
     /* 4 */ 
@@ -102,7 +96,7 @@ void bubble(int v[],int tam){
                 }
             }
             if(!flag)
-            break;
+                break;
         }
 }
 
@@ -115,7 +109,7 @@ int main(){
     int max = -1;
 
     for(i=0;i<dim;i++) {
-        vetor[i] = random() % limit;
+        vetor[i] = rand() % limit;
         if(max < vetor[i]) max = vetor[i];
     }
 
@@ -136,4 +130,5 @@ int main(){
         printf("%d, ",vetor[i]);
     }
     puts("\n"); */
+    return 0;
 }
