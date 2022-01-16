@@ -112,7 +112,7 @@ void bubble(int v[],int tam){
 }
 
 int main(){
-    long long start_usec, end_usec, elapsed_usec, min_usec=0L;
+    long long start_usec, end_usec, elapsed_usec;
     printf("tam_bucket: %d\n",tam_bucket);
     int i,num_hwcntrs;
 
@@ -190,12 +190,11 @@ int main(){
 
     elapsed_usec = end_usec - start_usec;
 
-    if ((run==0) || (elapsed_usec < min_usec)) {
-        min_usec = elapsed_usec;
-        for (i=0 ; i< NUM_EVENTS ; i++) min_values[i] = values [i];
-    }
+  
+    for (i=0 ; i< NUM_EVENTS ; i++) min_values[i] = values [i];
+    
 
-    fprintf (stdout,"\nWall clock time: %lld usecs\n", min_usec);
+    fprintf (stdout,"\nWall clock time: %lld usecs\n", elapsed_usec);
 
     // output PAPI counters' values
     for (i=0 ; i< NUM_EVENTS ; i++) {
