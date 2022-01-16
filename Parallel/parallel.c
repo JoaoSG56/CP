@@ -14,11 +14,12 @@
 //#define tam_bucket 300
 struct timeval start, end;
 
-typedef struct {
+struct bucket{
     int tam;
     int topo;   
     int *balde;
-}bucket;
+};
+typedef struct bucket *Bucket;
 
 /* 
 nº buckets : pre-definido
@@ -33,14 +34,15 @@ int cmpfunc (const void * a, const void * b) {
 void bucket_sort(int v[],int max){
     int range = max/num_buckets + 1;
     printf("range: %d\n",range);
-    bucket b[num_buckets];
+    Bucket *b = malloc(num_buckets * sizeof(Bucket));
     int i,j,k;
     /* 1 */ 
     
     for(i=0;i<num_buckets;i++){                  //inicializa todos os "topo"
-        b[i].tam = tam_bucket;
-        b[i].topo=0;
-        b[i].balde = (int *) malloc(sizeof(int)*tam_bucket);
+        b[i] = malloc(sizeof(struct bucket));
+        b[i]->tam = tam_bucket;
+        b[i]->topo=0;
+        b[i]->balde = (int *) malloc(sizeof(int)*tam_bucket);
     }
 
 
@@ -48,15 +50,15 @@ void bucket_sort(int v[],int max){
     /* 2 */ 
     for(i=0;i<dim;i++){                          //verifica em que balde o elemento deve ficar
         j = v[i] / range;
-        if(b[j].topo == b[j].tam){
+        if(b[j]->topo == b[j]->tam){
             // realloc
-            b[j].tam *= 2;
-            b[j].balde = (int *) realloc(b[j].balde, b[j].tam * sizeof(int));
+            b[j]->tam *= 2;
+            b[j]->balde = (int *) realloc(b[j]->balde, b[j]->tam * sizeof(int));
         }
 
-        b[j].balde[b[j].topo]=v[i];
+        b[j]->balde[b[j]->topo]=v[i];
 
-        (b[j].topo)++;
+        (b[j]->topo)++;
     }
     /* 3 */
     int n_threads = 4;
@@ -65,14 +67,14 @@ void bucket_sort(int v[],int max){
 #pragma omp parallel num_threads(n_threads)
 #pragma omp for
     for(i=0;i<num_buckets;i++){                     //ordena os baldes
-        if(b[i].topo){
-            bubble(b[i].balde,b[i].topo);
-            //qsort(b[i].balde,b[i].topo,sizeof(int),cmpfunc);
+        if(b[i]->topo){
+            //bubble(b[i]->balde,b[i]->topo);
+            qsort(b[i]->balde,b[i]->topo,sizeof(int),cmpfunc);
             //printf("\n\n----------------------\n");
             //int j;
             //printf("balde numero: %d\n",i);
-            //for(j = 0; j< b[i].topo; j++){
-            //    printf("%d, ", b[i].balde[j]);
+            //for(j = 0; j< b[i]->topo; j++){
+            //    printf("%d, ", b[i]->balde[j]);
             //}
             //printf("----------------------\n\n");
         }
@@ -81,8 +83,8 @@ void bucket_sort(int v[],int max){
     i=0;
     /* 4 */ 
     for(j=0;j<num_buckets;j++){                    //põe os elementos dos baldes de volta no vetor
-        for(k=0;k<b[j].topo;k++){
-            v[i]=b[j].balde[k];
+        for(k=0;k<b[j]->topo;k++){
+            v[i]=b[j]->balde[k];
             i++;
         }
     }
