@@ -5,11 +5,11 @@
 #include "papi.h"
 
 // PAPI events to monitor
-// #define NUM_EVENTS 4
-// int Events[NUM_EVENTS] = { PAPI_TOT_CYC, PAPI_TOT_INS , PAPI_L1_DCM, PAPI_L2_DCM};
+#define NUM_EVENTS 4
+int Events[NUM_EVENTS] = { PAPI_TOT_CYC, PAPI_TOT_INS , PAPI_L1_DCM, PAPI_L2_DCM};
 // // PAPI counters' values
-// long long values[NUM_EVENTS], min_values[NUM_EVENTS];
-// int retval, EventSet=PAPI_NULL;
+long long values[NUM_EVENTS], min_values[NUM_EVENTS];
+int retval, EventSet=PAPI_NULL;
 
 
 #define limit 10000
@@ -22,7 +22,7 @@
 
 struct timeval start, end;
 
-struct bucket{
+typedef struct bucket{
     int tam;
     int topo;   
     int *balde;
