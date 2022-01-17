@@ -18,7 +18,7 @@ int retval, EventSet=PAPI_NULL;
 //#define dim 500000 // tamanho do array
 
 #define num_buckets 20 // numero de buckets
-#define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
+//#define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
 //#define tam_bucket 300
 struct timeval start, end;
 
@@ -34,12 +34,13 @@ nº buckets : pre-definido
 range bucket - nº max do array / nº buckets
 */
 
-void bucket_sort(int v[],int tam);                   //cabeçalho das funções
+void bucket_sort(int v[],int tam,int dim, int n_threads);                   //cabeçalho das funções
 void bubble(int v[],int tam);                                                 
 int cmpfunc (const void * a, const void * b) {
    return ( *(int*)a - *(int*)b );
 }     
-void bucket_sort(int v[],int max,dim,n_threads){
+void bucket_sort(int v[],int max,int dim,int n_threads){
+    int tam_bucket = dim/num_buckets + (dim/num_buckets)/3
     int range = max/num_buckets + 1;
     printf("range: %d\n",range);
     Bucket *b = malloc(num_buckets * sizeof(Bucket));
@@ -125,7 +126,7 @@ int main(){
 
 
     int dims[] = {10000000,100000000,500000000};
-    int thr[] = {4,16}
+    int thr[] = {4,16};
     
 
     // Calculate the time taken by take_enter()
@@ -223,7 +224,7 @@ int main(){
 
 
         }
-        free(vetor)
+        free(vetor);
     }
 
 
