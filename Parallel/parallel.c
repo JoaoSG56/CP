@@ -14,14 +14,15 @@ long long values[NUM_EVENTS], min_values[NUM_EVENTS];
 int retval, EventSet=PAPI_NULL;
 
 
-#define limit 500000000
-#define dim 10000000 // tamanho do array
+#define limit 50000000
+// #define dim 500000000 // tamanho do array
 
-#define num_buckets 100 // numero de buckets
-#define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
+// #define num_buckets 100 // numero de buckets
+// #define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
 //#define tam_bucket 300
 struct timeval start, end;
-#define n_threads 4
+// #define n_threads 4
+
 typedef struct bucket{
     int tam;
     int topo;   
@@ -34,12 +35,13 @@ nº buckets : pre-definido
 range bucket - nº max do array / nº buckets
 */
 
-void bucket_sort(int v[],int tam);                   //cabeçalho das funções
 void bubble(int v[],int tam);                                                 
 int cmpfunc (const void * a, const void * b) {
    return ( *(int*)a - *(int*)b );
 }     
-void bucket_sort(int v[],int max){
+void bucket_sort(int v[],int max,int dim,int num_buckets,int n_threads){
+
+    int tam_bucket = dim/num_buckets + (dim/num_buckets)/3; // tamanho de cada bucket originalmente
     int range = max/num_buckets + 1;
     printf("range: %d\n",range);
     Bucket *b = malloc(num_buckets * sizeof(Bucket));
@@ -72,12 +74,12 @@ void bucket_sort(int v[],int max){
     
     //int n_threads = num_buckets/5;
     printf("numero de threads: %d\n",n_threads);
-#pragma omp parallel num_threads(n_threads)
-#pragma omp for
+#pragma omp parallel for schedule(static) num_threads(n_threads)
     for(i=0;i<num_buckets;i++){                     //ordena os baldes
         if(b[i]->topo){
             //bubble(b[i]->balde,b[i]->topo);
             qsort(b[i]->balde,b[i]->topo,sizeof(int),cmpfunc);
+
             //printf("\n\n----------------------\n");
             //int j;
             //printf("balde numero: %d\n",i);
@@ -116,8 +118,12 @@ void bubble(int v[],int tam){
         }
 }
 
-int main(){
+int main(int argc, char **argv){
     long long start_usec, end_usec, elapsed_usec;
+    int dim = atoi(argv[1]);
+    int num_buckets = atoi(argv[2]);
+    int n_threads = atoi(argv[3]);
+
     printf("[PARALELO]------------ dim: %d ---------- n_threads: %d",dim,n_threads);
     printf("num_buckets: %d\n",num_buckets);
     int i,num_hwcntrs;
@@ -131,7 +137,6 @@ int main(){
         if(max < vetor[i]) max = vetor[i];
     }
 
-    
 
     // Calculate the time taken by take_enter()
     retval = PAPI_library_init(PAPI_VER_CURRENT);
@@ -182,7 +187,7 @@ int main(){
         return 0;
     }
 
-    bucket_sort(vetor,max);
+    bucket_sort(vetor,max,dim,num_buckets,n_threads);
 
     
     /* Stop counting events */
@@ -223,6 +228,7 @@ int main(){
         }
         first = vetor[i];
     }
+
     printf("Ordenado : %d\n",flag);
     printf("-----------------------------\n");
     /* for(i=0;i<dim;i++){

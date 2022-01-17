@@ -4,23 +4,18 @@
 #include <stdlib.h>
 #include <omp.h>
 
+#include <math.h>
+
 #include "papi.h"
 
-// PAPI events to monitor
-#define NUM_EVENTS 4
-int Events[NUM_EVENTS] = { PAPI_TOT_CYC, PAPI_TOT_INS , PAPI_L1_DCM, PAPI_L2_DCM};
-// // PAPI counters' values
-long long values[NUM_EVENTS], min_values[NUM_EVENTS];
-int retval, EventSet=PAPI_NULL;
 
+#define limit 50000000
+// #define dim 500000000 // tamanho do array
 
-#define limit 10000
-#define dim 500000 // tamanho do array
-
-#define num_buckets 20 // numero de buckets
-#define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
+#define num_buckets 100 // numero de buckets
+// #define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
 //#define tam_bucket 300
-struct timeval start, end;
+// #define n_threads 4
 
 typedef struct bucket{
     int tam;
@@ -34,12 +29,14 @@ nº buckets : pre-definido
 range bucket - nº max do array / nº buckets
 */
 
-void bucket_sort(int v[],int tam);                   //cabeçalho das funções
+
 void bubble(int v[],int tam);                                                 
 int cmpfunc (const void * a, const void * b) {
    return ( *(int*)a - *(int*)b );
 }     
-void bucket_sort(int v[],int max){
+void bucket_sort(int v[],int max,int dim,int num_buckets,int n_threads){
+
+    int tam_bucket = dim/num_buckets + (dim/num_buckets)/3; // tamanho de cada bucket originalmente
     int range = max/num_buckets + 1;
     printf("range: %d\n",range);
     Bucket *b = malloc(num_buckets * sizeof(Bucket));
@@ -69,15 +66,15 @@ void bucket_sort(int v[],int max){
         (b[j]->topo)++;
     }
     /* 3 */
-    int n_threads = 4;
+    
     //int n_threads = num_buckets/5;
     printf("numero de threads: %d\n",n_threads);
-#pragma omp parallel num_threads(n_threads)
-#pragma omp for
+#pragma omp parallel for schedule(static) num_threads(n_threads)
     for(i=0;i<num_buckets;i++){                     //ordena os baldes
         if(b[i]->topo){
             //bubble(b[i]->balde,b[i]->topo);
             qsort(b[i]->balde,b[i]->topo,sizeof(int),cmpfunc);
+
             //printf("\n\n----------------------\n");
             //int j;
             //printf("balde numero: %d\n",i);
@@ -116,9 +113,13 @@ void bubble(int v[],int tam){
         }
 }
 
+int main(int argc, char **argv){
+    double start_usec, end_usec, elapsed_usec;
+    int dim = atoi(argv[1]);
+    int n_threads = atoi(argv[2]);
 
-int main(){
-    printf("tam_bucket: %d\n",tam_bucket);
+    printf("[PARALELO]------------ dim: %d ---------- n_threads: %d",dim,n_threads);
+    printf("num_buckets: %d\n",num_buckets);
     int i;
 
     int *vetor = (int *) malloc(sizeof(int)*dim);
@@ -130,17 +131,25 @@ int main(){
         if(max < vetor[i]) max = vetor[i];
     }
 
+    
+
+    start_usec = omp_get_wtime();
 
 
-    // Calculate the time taken by take_enter()
-    gettimeofday(&start, NULL);
 
-    bucket_sort(vetor,max);
+    bucket_sort(vetor,max,dim,num_buckets,n_threads);
 
-    gettimeofday(&end, NULL);
-    long seconds = (end.tv_sec - start.tv_sec);
-    long micros = ((seconds * 1000000) + end.tv_usec) - (start.tv_usec);
-    printf("The elapsed time is %ld seconds and %ld micros\n", seconds, micros);
+
+    end_usec = omp_get_wtime();
+    fprintf (stdout, "done!\n");
+
+    elapsed_usec = end_usec - start_usec;
+
+
+
+    fprintf (stdout,"\nWall clock time: %f usecs\n", elapsed_usec);
+
+
 
     int flag = 1;
     int first = vetor[0];
@@ -153,6 +162,11 @@ int main(){
         first = vetor[i];
     }
 
-    
+    printf("Ordenado : %d\n",flag);
+    printf("-----------------------------\n");
+    /* for(i=0;i<dim;i++){
+        printf("%d, ",vetor[i]);
+    }
+    puts("\n"); */
     return 0;
 }

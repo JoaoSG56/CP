@@ -12,13 +12,13 @@ long long values[NUM_EVENTS], min_values[NUM_EVENTS];
 int retval, EventSet=PAPI_NULL;
 
 
-#define limit 500000000
+#define limit 50000000
 
 
-#define dim 10000000 // tamanho do array
+// #define dim 10000000 // tamanho do array
 
-#define num_buckets 100 // numero de buckets
-#define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
+// #define num_buckets 100 // numero de buckets
+// #define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
 
 struct timeval start, end;
 
@@ -38,7 +38,9 @@ void bubble(int v[],int tam);
 int cmpfunc (const void * a, const void * b) {
    return ( *(int*)a - *(int*)b );
 }     
-void bucket_sort(int v[],int max){
+void bucket_sort(int v[],int max,int dim,int num_buckets){
+
+    int tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
     int range = max/num_buckets + 1;
     printf("range: %d\n",range);
     
@@ -111,9 +113,13 @@ void bubble(int v[],int tam){
         }
 }
 
-int main(){
+int main(int argc, char **argv){
     long long start_usec, end_usec, elapsed_usec;
     
+    int dim = atoi(argv[1]);
+    int num_buckets = atoi(argv[2]);
+    //int n_threads = atoi(argv[3]);
+
     printf("[SEQUENCIAL]------------ dim: %d ----------",dim);
     printf("num_buckets: %d\n",num_buckets);
     int i,num_hwcntrs;
