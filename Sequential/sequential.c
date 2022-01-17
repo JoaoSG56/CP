@@ -15,9 +15,9 @@ int retval, EventSet=PAPI_NULL;
 #define limit 500000000
 
 
-#define dim 500000 // tamanho do array
+#define dim 10000000 // tamanho do array
 
-#define num_buckets 500 // numero de buckets
+#define num_buckets 100 // numero de buckets
 #define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
 
 struct timeval start, end;
@@ -113,7 +113,9 @@ void bubble(int v[],int tam){
 
 int main(){
     long long start_usec, end_usec, elapsed_usec;
-    printf("tam_bucket: %d\n",tam_bucket);
+    
+    printf("[SEQUENCIAL]------------ dim: %d ----------",dim);
+    printf("num_buckets: %d\n",num_buckets);
     int i,num_hwcntrs;
 
     int *vetor = (int *) malloc(sizeof(int)*dim);
@@ -208,8 +210,18 @@ int main(){
     }
 
     
-   
-
+    int flag = 1;
+    int first = vetor[0];
+    for(i=1;i<dim;i++){
+        //printf("%d, ",vetor[i]);
+        if(first>vetor[i]){
+            flag = 0;
+            break;
+        }
+        first = vetor[i];
+    }
+    printf("Ordenado : %d\n",flag);
+    printf("-----------------------------\n");
 
     // for(i=0;i<dim;i++){
     //     printf("%d, ",vetor[i]);

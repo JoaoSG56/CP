@@ -4,9 +4,17 @@
 #include <stdlib.h>
 #include <omp.h>
 
+#include "papi.h"
+
+// PAPI events to monitor
+#define NUM_EVENTS 4
+int Events[NUM_EVENTS] = { PAPI_TOT_CYC, PAPI_TOT_INS , PAPI_L1_DCM, PAPI_L2_DCM};
+// // PAPI counters' values
+long long values[NUM_EVENTS], min_values[NUM_EVENTS];
+int retval, EventSet=PAPI_NULL;
+
+
 #define limit 10000
-
-
 #define dim 500000 // tamanho do array
 
 #define num_buckets 20 // numero de buckets
@@ -14,11 +22,12 @@
 //#define tam_bucket 300
 struct timeval start, end;
 
-typedef struct {
+typedef struct bucket{
     int tam;
     int topo;   
     int *balde;
-}bucket;
+}*Bucket;
+
 
 /* 
 nº buckets : pre-definido
@@ -33,36 +42,31 @@ int cmpfunc (const void * a, const void * b) {
 void bucket_sort(int v[],int max){
     int range = max/num_buckets + 1;
     printf("range: %d\n",range);
-    bucket b[num_buckets];
+    Bucket *b = malloc(num_buckets * sizeof(Bucket));
     int i,j,k;
     /* 1 */ 
     
     for(i=0;i<num_buckets;i++){                  //inicializa todos os "topo"
-        b[i].tam = tam_bucket;
-        b[i].topo=0;
-        b[i].balde = (int *) malloc(sizeof(int)*tam_bucket);
+        b[i] = malloc(sizeof(struct bucket));
+        b[i]->tam = tam_bucket;
+        b[i]->topo=0;
+        b[i]->balde = (int *) malloc(sizeof(int)*tam_bucket);
     }
 
 
 
-    /* 2 */
-#pragma omp parallel num_threads(n_threads)
-#pragma omp for
+    /* 2 */ 
     for(i=0;i<dim;i++){                          //verifica em que balde o elemento deve ficar
         j = v[i] / range;
-        #pragma omp critical
-        {
-        if(b[j].topo == b[j].tam){
+        if(b[j]->topo == b[j]->tam){
             // realloc
-            b[j].tam *= 2;
-            b[j].balde = (int *) realloc(b[j].balde, b[j].tam * sizeof(int));
+            b[j]->tam *= 2;
+            b[j]->balde = (int *) realloc(b[j]->balde, b[j]->tam * sizeof(int));
         }
-        
 
-        b[j].balde[b[j].topo]=v[i];
+        b[j]->balde[b[j]->topo]=v[i];
 
-        (b[j].topo)++;
-        }
+        (b[j]->topo)++;
     }
     /* 3 */
     int n_threads = 4;
@@ -71,17 +75,24 @@ void bucket_sort(int v[],int max){
 #pragma omp parallel num_threads(n_threads)
 #pragma omp for
     for(i=0;i<num_buckets;i++){                     //ordena os baldes
-        if(b[i].topo){
-            bubble(b[i].balde,b[i].topo);
-            //qsort(b[i].balde,b[i].topo,sizeof(int),cmpfunc);
+        if(b[i]->topo){
+            //bubble(b[i]->balde,b[i]->topo);
+            qsort(b[i]->balde,b[i]->topo,sizeof(int),cmpfunc);
+            //printf("\n\n----------------------\n");
+            //int j;
+            //printf("balde numero: %d\n",i);
+            //for(j = 0; j< b[i]->topo; j++){
+            //    printf("%d, ", b[i]->balde[j]);
+            //}
+            //printf("----------------------\n\n");
         }
     }
 
     i=0;
     /* 4 */ 
     for(j=0;j<num_buckets;j++){                    //põe os elementos dos baldes de volta no vetor
-        for(k=0;k<b[j].topo;k++){
-            v[i]=b[j].balde[k];
+        for(k=0;k<b[j]->topo;k++){
+            v[i]=b[j]->balde[k];
             i++;
         }
     }
@@ -104,6 +115,7 @@ void bubble(int v[],int tam){
             break;
         }
 }
+
 
 int main(){
     printf("tam_bucket: %d\n",tam_bucket);
@@ -130,10 +142,17 @@ int main(){
     long micros = ((seconds * 1000000) + end.tv_usec) - (start.tv_usec);
     printf("The elapsed time is %ld seconds and %ld micros\n", seconds, micros);
 
-
-    /* for(i=0;i<dim;i++){
-        printf("%d, ",vetor[i]);
+    int flag = 1;
+    int first = vetor[0];
+    for(i=1;i<dim;i++){
+        //printf("%d, ",vetor[i]);
+        if(first>vetor[i]){
+            flag = 0;
+            break;
+        }
+        first = vetor[i];
     }
-    puts("\n"); */
+
+    
     return 0;
 }
