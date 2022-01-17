@@ -12,7 +12,7 @@ long long values[NUM_EVENTS], min_values[NUM_EVENTS];
 int retval, EventSet=PAPI_NULL;
 
 
-#define limit 10000
+#define limit 500000000
 
 
 #define dim 500000 // tamanho do array

@@ -4,22 +4,30 @@
 #include <stdlib.h>
 #include <omp.h>
 
-#define limit 10000
+#include "papi.h"
+
+// PAPI events to monitor
+#define NUM_EVENTS 4
+int Events[NUM_EVENTS] = { PAPI_TOT_CYC, PAPI_TOT_INS , PAPI_L1_DCM, PAPI_L2_DCM};
+// // PAPI counters' values
+long long values[NUM_EVENTS], min_values[NUM_EVENTS];
+int retval, EventSet=PAPI_NULL;
 
 
-#define dim 500000 // tamanho do array
+#define limit 500000000
+//#define dim 500000 // tamanho do array
 
 #define num_buckets 20 // numero de buckets
 #define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
 //#define tam_bucket 300
 struct timeval start, end;
 
-struct bucket{
+typedef struct bucket{
     int tam;
     int topo;   
     int *balde;
-};
-typedef struct bucket *Bucket;
+}*Bucket;
+
 
 /* 
 nº buckets : pre-definido
@@ -31,7 +39,7 @@ void bubble(int v[],int tam);
 int cmpfunc (const void * a, const void * b) {
    return ( *(int*)a - *(int*)b );
 }     
-void bucket_sort(int v[],int max){
+void bucket_sort(int v[],int max,dim,n_threads){
     int range = max/num_buckets + 1;
     printf("range: %d\n",range);
     Bucket *b = malloc(num_buckets * sizeof(Bucket));
@@ -61,9 +69,9 @@ void bucket_sort(int v[],int max){
         (b[j]->topo)++;
     }
     /* 3 */
-    int n_threads = 4;
+    //int n_threads = 4;
     //int n_threads = num_buckets/5;
-    printf("numero de threads: %d\n",n_threads);
+    //printf("numero de threads: %d\n",n_threads);
 #pragma omp parallel num_threads(n_threads)
 #pragma omp for
     for(i=0;i<num_buckets;i++){                     //ordena os baldes
@@ -109,29 +117,114 @@ void bubble(int v[],int tam){
 }
 
 int main(){
+    long long start_usec, end_usec, elapsed_usec;
     printf("tam_bucket: %d\n",tam_bucket);
-    int i;
+    int i,num_hwcntrs;
 
-    int *vetor = (int *) malloc(sizeof(int)*dim);
-
-    int max = -1;
-
-    for(i=0;i<dim;i++) {
-        vetor[i] = rand() % limit;
-        if(max < vetor[i]) max = vetor[i];
-    }
+  
 
 
+    int dims[] = {10000000,100000000,500000000};
+    int thr[] = {4,16}
+    
 
     // Calculate the time taken by take_enter()
-    gettimeofday(&start, NULL);
+    retval = PAPI_library_init(PAPI_VER_CURRENT);
+    if (retval != PAPI_VER_CURRENT) {
+        fprintf(stderr,"PAPI library init error!\n");
+        return 0;
+    }
+    int k,z;
+    
+    for(z = 0; j<3;j++){
+        int max = -1;
+        int *vetor = (int *) malloc(sizeof(int)*dim);
 
-    bucket_sort(vetor,max);
+        for(i=0;i<dim;i++) {
+            vetor[i] = rand() % limit;
+            if(max < vetor[i]) max = vetor[i];
+        }
+        for (k = 0; i<2; i++){
+         
 
-    gettimeofday(&end, NULL);
-    long seconds = (end.tv_sec - start.tv_sec);
-    long micros = ((seconds * 1000000) + end.tv_usec) - (start.tv_usec);
-    printf("The elapsed time is %ld seconds and %ld micros\n", seconds, micros);
+
+                        /* create event set */
+            if (PAPI_create_eventset(&EventSet) != PAPI_OK) {
+                fprintf(stderr,"PAPI create event set error\n");
+                return 0;
+            }
+
+
+            /* Get the number of hardware counters available */
+            if ((num_hwcntrs = PAPI_num_hwctrs()) <= PAPI_OK)  {
+                fprintf (stderr, "PAPI error getting number of available hardware counters!\n");
+                return 0;
+            }
+            fprintf(stdout, "done!\nThis system has %d available counters.\n\n", num_hwcntrs);
+
+            // We will be using at most NUM_EVENTS counters
+            if (num_hwcntrs >= NUM_EVENTS) {
+                num_hwcntrs = NUM_EVENTS;
+            } else {
+                fprintf (stderr, "Error: there aren't enough counters to monitor %d events!\n", NUM_EVENTS);
+                return 0;
+            }
+
+            if (PAPI_add_events(EventSet,Events,NUM_EVENTS) != PAPI_OK)  {
+                fprintf(stderr,"PAPI library add events error!\n");
+                return 0;
+            }
+        
+            
+
+
+            // // use PAPI timer (usecs) - note that this is wall clock time
+            // // for process time running in user mode -> PAPI_get_virt_usec()
+            // // real and virtual clock cycles can also be read using the equivalent
+            // // PAPI_get[real|virt]_cyc()
+            start_usec = PAPI_get_real_usec();
+
+            // /* Start counting events */
+            if (PAPI_start(EventSet) != PAPI_OK) {
+                fprintf (stderr, "PAPI error starting counters!\n");
+                return 0;
+            }
+            printf("------- input: %d --------- threads: %d -----\n",dims[z],thr[k]);
+            bucket_sort(vetor,max,dims[z],thr[k]);
+            printf("---------------------------------------------\n");
+            
+            /* Stop counting events */
+            if (PAPI_stop(EventSet,values) != PAPI_OK) {
+                fprintf (stderr, "PAPI error stoping counters!\n");
+                return 0;
+            }
+
+            end_usec = PAPI_get_real_usec();
+            fprintf (stdout, "done!\n");
+
+            elapsed_usec = end_usec - start_usec;
+
+        
+            for (i=0 ; i< NUM_EVENTS ; i++) min_values[i] = values [i];
+            
+
+            fprintf (stdout,"\nWall clock time: %lld usecs\n", elapsed_usec);
+
+            // output PAPI counters' values
+            for (i=0 ; i< NUM_EVENTS ; i++) {
+                char EventCodeStr[PAPI_MAX_STR_LEN];
+
+                if (PAPI_event_code_to_name(Events[i], EventCodeStr) == PAPI_OK) {
+                    fprintf (stdout, "%s = %lld\n", EventCodeStr, min_values[i]);
+                } else {
+                    fprintf (stdout, "PAPI UNKNOWN EVENT = %lld\n", min_values[i]);
+                }
+            }
+
+
+        }
+        free(vetor)
+    }
 
 
     /* for(i=0;i<dim;i++){
