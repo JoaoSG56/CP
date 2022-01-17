@@ -30,7 +30,7 @@ int cmpfunc (const void * a, const void * b) {
 }     
 void bucket_sort(int v[],int max,int dim,int num_buckets){
 
-    int tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
+    int tam_bucket = dim/num_buckets + (dim/num_buckets)/3; // tamanho de cada bucket originalmente
     int range = max/num_buckets + 1;
     printf("range: %d\n",range);
     
