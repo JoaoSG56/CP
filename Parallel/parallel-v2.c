@@ -10,12 +10,9 @@
 
 
 #define limit 50000000
-// #define dim 500000000 // tamanho do array
+
 
 #define num_buckets 100 // numero de buckets
-// #define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
-//#define tam_bucket 300
-// #define n_threads 4
 
 typedef struct bucket{
     int tam;
@@ -24,17 +21,11 @@ typedef struct bucket{
 }*Bucket;
 
 
-/* 
-nº buckets : pre-definido
-range bucket - nº max do array / nº buckets
-*/
-
-
 void bubble(int v[],int tam);                                                 
 int cmpfunc (const void * a, const void * b) {
    return ( *(int*)a - *(int*)b );
 }     
-void bucket_sort(int v[],int max,int dim,int num_buckets,int n_threads){
+void bucket_sort(int v[],int max,int dim,int n_threads){
 
     int tam_bucket = dim/num_buckets + (dim/num_buckets)/3; // tamanho de cada bucket originalmente
     int range = max/num_buckets + 1;
@@ -75,13 +66,6 @@ void bucket_sort(int v[],int max,int dim,int num_buckets,int n_threads){
             //bubble(b[i]->balde,b[i]->topo);
             qsort(b[i]->balde,b[i]->topo,sizeof(int),cmpfunc);
 
-            //printf("\n\n----------------------\n");
-            //int j;
-            //printf("balde numero: %d\n",i);
-            //for(j = 0; j< b[i]->topo; j++){
-            //    printf("%d, ", b[i]->balde[j]);
-            //}
-            //printf("----------------------\n\n");
         }
     }
 
@@ -150,23 +134,5 @@ int main(int argc, char **argv){
     fprintf (stdout,"\nWall clock time: %f usecs\n", elapsed_usec);
 
 
-
-    int flag = 1;
-    int first = vetor[0];
-    for(i=1;i<dim;i++){
-        //printf("%d, ",vetor[i]);
-        if(first>vetor[i]){
-            flag = 0;
-            break;
-        }
-        first = vetor[i];
-    }
-
-    printf("Ordenado : %d\n",flag);
-    printf("-----------------------------\n");
-    /* for(i=0;i<dim;i++){
-        printf("%d, ",vetor[i]);
-    }
-    puts("\n"); */
     return 0;
 }

@@ -15,11 +15,6 @@ int retval, EventSet=PAPI_NULL;
 #define limit 50000000
 
 
-// #define dim 10000000 // tamanho do array
-
-// #define num_buckets 100 // numero de buckets
-// #define tam_bucket dim/num_buckets + (dim/num_buckets)/3 // tamanho de cada bucket originalmente
-
 struct timeval start, end;
 
 typedef struct bucket{
@@ -28,12 +23,7 @@ typedef struct bucket{
     int *balde;
 }*Bucket;
 
-/* 
-nº buckets : pre-definido
-range bucket - nº max do array / nº buckets
-*/
 
-void bucket_sort(int v[],int tam);                   //cabeçalho das funções
 void bubble(int v[],int tam);                                                 
 int cmpfunc (const void * a, const void * b) {
    return ( *(int*)a - *(int*)b );
@@ -45,7 +35,7 @@ void bucket_sort(int v[],int max,int dim,int num_buckets){
     printf("range: %d\n",range);
     
     Bucket *b = malloc(num_buckets * sizeof(Bucket));
-    //bucket b[num_buckets];
+
     int i,j,k;
     /* 1 */ 
     
@@ -76,13 +66,6 @@ void bucket_sort(int v[],int max,int dim,int num_buckets){
         if(b[i]->topo){
             //bubble(b[i]->balde,b[i]->topo);
             qsort(b[i]->balde,b[i]->topo,sizeof(int),cmpfunc);
-            //printf("\n\n----------------------\n");
-            //int j;
-            //printf("balde numero: %d\n",i);
-            //for(j = 0; j< b[i]->topo; j++){
-            //    printf("%d, ", b[i]->balde[j]);
-            //}
-            //printf("----------------------\n\n");
         }
 
     i=0;
@@ -118,7 +101,6 @@ int main(int argc, char **argv){
     
     int dim = atoi(argv[1]);
     int num_buckets = atoi(argv[2]);
-    //int n_threads = atoi(argv[3]);
 
     printf("[SEQUENCIAL]------------ dim: %d ----------",dim);
     printf("num_buckets: %d\n",num_buckets);
@@ -170,12 +152,6 @@ int main(int argc, char **argv){
     }
   
     
-
-
-    // // use PAPI timer (usecs) - note that this is wall clock time
-    // // for process time running in user mode -> PAPI_get_virt_usec()
-    // // real and virtual clock cycles can also be read using the equivalent
-    // // PAPI_get[real|virt]_cyc()
     start_usec = PAPI_get_real_usec();
 
     // /* Start counting events */
@@ -215,23 +191,6 @@ int main(int argc, char **argv){
         }
     }
 
-    
-    int flag = 1;
-    int first = vetor[0];
-    for(i=1;i<dim;i++){
-        //printf("%d, ",vetor[i]);
-        if(first>vetor[i]){
-            flag = 0;
-            break;
-        }
-        first = vetor[i];
-    }
-    printf("Ordenado : %d\n",flag);
-    printf("-----------------------------\n");
 
-    // for(i=0;i<dim;i++){
-    //     printf("%d, ",vetor[i]);
-    // }
-    //puts("\n"); 
     return 0;
 }
